@@ -12,7 +12,7 @@
     "framework"     : "netcoreapp2.1",
     "s3-prefix"     : "MyServerlessApi/",
     "template"      : "serverless.template",
-    "template-parameters" : "\"ShouldCreateBucket\"=\"true\";\"BucketName\"=\"\"",
-    "s3-bucket"           : "templates-netcore-cicd",
+    "template-parameters" : "",
+    "s3-bucket"           : "demo-serverless",
     "stack-name"          : "demo-sns"
 }

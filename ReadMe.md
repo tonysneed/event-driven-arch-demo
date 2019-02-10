@@ -45,7 +45,9 @@ In this demo a Serverless Web API publishes an SNS topic, and an SQS queue subsc
 2. Create a subscription to the topic for the SNS queue.
    - Select SQS as the protocol, select the sample queue.
 
-## Serverless API to publish SNS Topic
+## Publish SNS Topic with Web API
+
+> Note: This demo publishes a Serverless app to an API Gateway, but a Web API can also be deployed to Amazon ECS that is accessible by some other means.
 
 1. Create a new AWS Serverless app using the ASPNET Core Web API blueprint.
 2. Update the AWS NuGet packages.
@@ -88,15 +90,21 @@ In this demo a Serverless Web API publishes an SNS topic, and an SQS queue subsc
         return StatusCode((int) result.HttpStatusCode, result.MessageId);
     }
     ```
-8. Test the SNS proxy locally.
-   - Postman: POST with json body
-     - URL: http://localhost:51123/api/snsproxy
+8. Publish the serverless app to Amazon
+   - Select the appropriate stack name and S3 bucket for the CloudFormation templates.
+   - After publishing has completed copy the AWS Serverless URL from the published service.
+9. Enable CloudWatch logs for the API Gateway service.
+   - Create a new role and assign `AmazonAPIGatewayPushToCloudWatchLogs` policy.
+   - Copy the role ARN and paste into **CloudWatch log role ARN** of Amazon API Gateway Settings.
+   - Select the Prod **stage** of the API for the service and enable CloudWatch settings under **Logs/Tracing**.
+   - After executing the request in Postman, go to CloudWatch logs and filter for `API-Gateway`
+     - If an error response is returned examine the Endpoint response body in the logs.
+10. Test the servicve with Postman: POST with raw JSON body
     ```json
     {
         "duration": 5,
         "message": "Hello Lambda! (5 seconds)"
     }
     ```
-9. Publish the serverless app to Amazon
-   - Copy the AWS Serverless URL from the published service.
-
+11. Inspect the CloudWatch logs for the lambda function that processes messages from the queue.
+   - The logs should show the message that has been delivered the the queue from the subscription to the SNS topic.
