@@ -57,19 +57,46 @@ In this demo a Serverless Web API publishes an SNS topic, and an SQS queue subsc
 3. Remove `S3` related code from the project.
    - Delete the **S3ProxyController.cs** file
    - Update the call to `services.AddAWSService` in the `Startup` class
-    ```csharp
+
+    ```cs
     services.AddAWSService<IAmazonSimpleNotificationService>();
     ```
-4. Add the **SNSProxyController.cs** file to the **Controllers** folder.
+
+   - Remove S3 related items from the **serverless.template** file.
+  
+4. Add CloudWatch logging provider
+   - Add `AWS.Logger.AspNetCore` NuGet package.
+   - Add following to **appsettings.json** file.
+
+    ```json
+    "AWS.Logging": {
+        "Region": "eu-west-1",
+        "LogGroup": "Event-Driven-Arch.MyServerlessApi",
+        "LogLevel": {
+            "Default": "Debug",
+            "Microsoft": "Information"
+        }
+    },
+    ```
+   - Add `ILoggerFactory loggerFactory` to the `Configure` method in **Startup.cs**, then call `AddAWSProvider`.
+
+    ```cs
+    loggerFactory.AddAWSProvider(Configuration.GetAWSLoggingConfigSection());
+    ```
+
+5. Add the **SNSProxyController.cs** file to the **Controllers** folder.
    - Choose the _API Controller - Empty_ template.
-5. Add the ARN of the SNS topic to the appsettings.json file.
+6. Add the ARN of the SNS topic to the appsettings.json file.
    - Copy the topic ARN recorded earlier and paste it into **appsettings.json**.
+
     ```json
     "TopicArn": "arn:aws:sns:eu-west-1:779191825743:demo-topic"
     ```
-6. Add a contructor to `SNSProxyController`.
+
+7. Add a contructor to `SNSProxyController`.
    - Inject required depenedencies.
-    ```csharp
+
+    ```cs
     public SNSProxyController(IAmazonSimpleNotificationService snsClient, IConfiguration configuration, ILogger<SNSProxyController> logger)
     {
         SNSClient = snsClient;
@@ -77,8 +104,10 @@ In this demo a Serverless Web API publishes an SNS topic, and an SQS queue subsc
         Logger = logger;
     }
     ```
-7. Add an async post method to publish a message to the topic.
-    ```csharp
+
+8. Add an async post method to publish a message to the topic.
+
+    ```cs
     // POST api/snsproxy
     [HttpPost]
     public async Task<IActionResult> Post([FromBody]LambdaMessage message)
@@ -90,21 +119,24 @@ In this demo a Serverless Web API publishes an SNS topic, and an SQS queue subsc
         return StatusCode((int) result.HttpStatusCode, result.MessageId);
     }
     ```
-8. Publish the serverless app to Amazon
-   - Select the appropriate stack name and S3 bucket for the CloudFormation templates.
-   - After publishing has completed copy the AWS Serverless URL from the published service.
-9. Enable CloudWatch logs for the API Gateway service.
-   - Create a new role and assign `AmazonAPIGatewayPushToCloudWatchLogs` policy.
-   - Copy the role ARN and paste into **CloudWatch log role ARN** of Amazon API Gateway Settings.
-   - Select the Prod **stage** of the API for the service and enable CloudWatch settings under **Logs/Tracing**.
-   - After executing the request in Postman, go to CloudWatch logs and filter for `API-Gateway`
-     - If an error response is returned examine the Endpoint response body in the logs.
-10. Test the servicve with Postman: POST with raw JSON body
+
+9.  Publish the serverless app to Amazon.
+    - Select the appropriate stack name and S3 bucket for the CloudFormation templates.
+    - After publishing has completed copy the AWS Serverless URL from the published service.
+10. Enable CloudWatch logs for the API Gateway service.
+    - Create a new role and assign `AmazonAPIGatewayPushToCloudWatchLogs` policy.
+    - Copy the role ARN and paste into **CloudWatch log role ARN** of Amazon API Gateway Settings.
+    - Select the Prod **stage** of the API for the service and enable CloudWatch settings under **Logs/Tracing**.
+    - After executing the request in Postman, go to CloudWatch logs and filter for `API-Gateway`
+    - If an error response is returned examine the Endpoint response body in the logs.
+11. Test the servicve with Postman: POST with raw JSON body
+
     ```json
     {
         "duration": 5,
         "message": "Hello Lambda! (5 seconds)"
     }
     ```
-11. Inspect the CloudWatch logs for the lambda function that processes messages from the queue.
+
+12. Inspect the CloudWatch logs for the lambda function that processes messages from the queue.
    - The logs should show the message that has been delivered the the queue from the subscription to the SNS topic.
